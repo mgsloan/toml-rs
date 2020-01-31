@@ -22,6 +22,9 @@ members = ['test-suite']
 [dependencies]
 serde = "1.0.97"
 indexmap = { version = "1.0", optional = true }
+quickcheck = { version = "0.9.2", optional = true }
+quickcheck_derive = { version = "0.2.1", optional = true }
+rand = { version = "0.7.3", optional = true }
 
 [dev-dependencies]
 serde_derive = "1.0"
@@ -29,6 +32,7 @@ serde_json = "1.0"
 
 [features]
 default = []
+quickcheck-impls = ["quickcheck", "quickcheck_derive", "rand"]
 
 # Use indexmap rather than BTreeMap as the map type of toml::Value.
 # This allows data to be read into a Value and written back to a TOML string

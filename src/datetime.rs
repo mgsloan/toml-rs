@@ -2,6 +2,9 @@ use std::error;
 use std::fmt;
 use std::str::{self, FromStr};
 
+#[cfg(feature = "quickcheck-impls")]
+use quickcheck_derive::Arbitrary;
+
 use serde::{de, ser};
 
 /// A parsed TOML datetime value
@@ -22,6 +25,7 @@ use serde::{de, ser};
 /// `Deserialize` it's only recommended to use this type with the TOML format,
 /// otherwise encoded in other formats it may look a little odd.
 #[derive(PartialEq, Clone)]
+#[cfg_attr(feature = "quickcheck-impls", derive(Arbitrary))]
 pub struct Datetime {
     date: Option<Date>,
     time: Option<Time>,
@@ -44,6 +48,7 @@ pub const FIELD: &str = "$__toml_private_datetime";
 pub const NAME: &str = "$__toml_private_Datetime";
 
 #[derive(PartialEq, Clone)]
+#[cfg_attr(feature = "quickcheck-impls", derive(Arbitrary))]
 struct Date {
     year: u16,
     month: u8,
@@ -51,6 +56,7 @@ struct Date {
 }
 
 #[derive(PartialEq, Clone)]
+#[cfg_attr(feature = "quickcheck-impls", derive(Arbitrary))]
 struct Time {
     hour: u8,
     minute: u8,
@@ -59,6 +65,7 @@ struct Time {
 }
 
 #[derive(PartialEq, Clone)]
+#[cfg_attr(feature = "quickcheck-impls", derive(Arbitrary))]
 enum Offset {
     Z,
     Custom { hours: i8, minutes: u8 },

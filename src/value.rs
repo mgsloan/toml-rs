@@ -12,6 +12,11 @@ use serde::de;
 use serde::de::IntoDeserializer;
 use serde::ser;
 
+#[cfg(feature = "quickcheck-impls")]
+use quickcheck::{Arbitrary, Gen};
+#[cfg(feature = "quickcheck-impls")]
+use rand::Rng;
+
 use crate::datetime::{self, DatetimeFromString};
 pub use crate::datetime::{Datetime, DatetimeParseError};
 
@@ -1077,4 +1082,64 @@ impl<'a, 'de> de::Visitor<'de> for DatetimeOrTable<'a> {
             Ok(false)
         }
     }
+}
+
+#[cfg(feature = "quickcheck-impls")]
+impl Arbitrary for Value {
+    fn arbitrary<G: Gen>(g: &mut G) -> Self {
+        arbitrary_value(g, 3)
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Value>> {
+        match self {
+            Value::String(x) => Box::new(x.shrink().map(Value::String)),
+            Value::Integer(x) => Box::new(x.shrink().map(Value::Integer)),
+            Value::Float(x) => Box::new(x.shrink().map(Value::Float)),
+            Value::Boolean(x) => Box::new(x.shrink().map(Value::Boolean)),
+            Value::Datetime(x) => Box::new(x.shrink().map(Value::Datetime)),
+            Value::Array(x) => Box::new(x.shrink().map(Value::Array)),
+            Value::Table(x) => Box::new(shrink_table(x)),
+        }
+    }
+}
+
+#[cfg(feature = "quickcheck-impls")]
+fn arbitrary_value<G: Gen>(g: &mut G, gas: i32) -> Value {
+    match Rng::gen_range(g, 0, if gas < 0 { 5 } else { 7 }) {
+        0 => Value::String(Arbitrary::arbitrary(g)),
+        1 => Value::Integer(Arbitrary::arbitrary(g)),
+        2 => Value::Float(Arbitrary::arbitrary(g)),
+        3 => Value::Boolean(Arbitrary::arbitrary(g)),
+        4 => Value::Datetime(Arbitrary::arbitrary(g)),
+        5 => Value::Array(arbitrary_array(g, gas)),
+        _ => Value::Table(arbitrary_table(g, gas)),
+    }
+}
+
+#[cfg(feature = "quickcheck-impls")]
+fn arbitrary_table<G: Gen>(g: &mut G, gas: i32) -> Table {
+    let mut table = Table::new();
+    for _ in 0..Rng::gen_range(g, 0, 3) {
+        table.insert(Arbitrary::arbitrary(g), arbitrary_value(g, gas - 1));
+    }
+    table
+}
+
+#[cfg(feature = "quickcheck-impls")]
+fn shrink_table(table: &Table) -> Box<dyn Iterator<Item = Value>> {
+    let table_as_vec: Vec<(String, Value)> = table.clone().into_iter().collect();
+    Box::new(
+        table_as_vec
+            .shrink()
+            .map(|entries| Value::Table(entries.into_iter().collect())),
+    )
+}
+
+#[cfg(feature = "quickcheck-impls")]
+fn arbitrary_array<G: Gen>(g: &mut G, gas: i32) -> Array {
+    let mut array = Array::new();
+    for _ in 0..Rng::gen_range(g, 0, 3) {
+        array.push(arbitrary_value(g, gas - 1));
+    }
+    array
 }
